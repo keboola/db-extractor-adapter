@@ -81,8 +81,11 @@ class FallbackExportAdapter implements ExportAdapter
         throw new InvalidStateException('At least one adapter must be specified.');
     }
 
-    public function getUsedExportAdapter(): ?ExportAdapter
+    public function getUsedExportAdapter(): ExportAdapter
     {
+        if (!$this->usedExportAdapter) {
+            throw new InvalidStateException('No adapter was used.');
+        }
         return $this->usedExportAdapter;
     }
 }
