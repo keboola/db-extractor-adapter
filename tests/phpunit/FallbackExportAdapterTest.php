@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\DbExtractor\Adapter\Tests;
 
 use Keboola\DbExtractor\Adapter\Exception\InvalidArgumentException;
+use Keboola\DbExtractor\Adapter\Exception\InvalidStateException;
 use Keboola\DbExtractor\Adapter\FallbackExportAdapter;
 use Keboola\DbExtractor\Adapter\Tests\Fixtures\FailingExportAdapter;
 use Keboola\DbExtractor\Adapter\Tests\Fixtures\FailingExportAdapterException;
@@ -193,6 +194,20 @@ class FallbackExportAdapterTest extends BaseTest
             'Exporting by "Adapter2" adapter.'
         ));
         Assert::assertSame('Adapter2', $fallbackAdapter->getUsedExportAdapter()->getName());
+    }
+
+    public function testNoAdapterWasUsed(): void
+    {
+        $adapter1 = new SkippedExportAdapter('Adapter1');
+        $adapter2 = new PassingExportAdapter('Adapter2');
+        $fallbackAdapter = new FallbackExportAdapter($this->logger, [
+            $adapter1,
+            $adapter2,
+        ]);
+
+        $this->expectException(InvalidStateException::class);
+        $this->expectExceptionMessage('No adapter was used.');
+        $fallbackAdapter->getUsedExportAdapter();
     }
 
     private function createDummyExportConfig(): ExportConfig
