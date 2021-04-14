@@ -52,6 +52,7 @@ class FallbackExportAdapterTest extends BaseTest
         Assert::assertSame(1, $adapter1->getExportCallCount());
         Assert::assertSame(0, $adapter2->getExportCallCount());
         Assert::assertSame(0, $adapter3->getExportCallCount());
+        Assert::assertSame('Adapter1', $fallbackAdapter->getUsedExportAdapter()->getName());
         Assert::assertTrue($this->logger->hasInfoThatContains('Exporting by "Adapter1" adapter.'));
     }
 
@@ -71,6 +72,7 @@ class FallbackExportAdapterTest extends BaseTest
         Assert::assertSame(1, $adapter1->getExportCallCount());
         Assert::assertSame(0, $adapter2->getExportCallCount());
         Assert::assertSame(0, $adapter3->getExportCallCount());
+        Assert::assertSame('Adapter1', $fallbackAdapter->getUsedExportAdapter()->getName());
         Assert::assertTrue($this->logger->hasInfoThatContains('Exporting by "Adapter1" adapter.'));
     }
 
@@ -164,6 +166,7 @@ class FallbackExportAdapterTest extends BaseTest
         Assert::assertTrue($this->logger->hasInfoThatContains(
             'Exporting by "Adapter2" adapter.'
         ));
+        Assert::assertSame('Adapter2', $fallbackAdapter->getUsedExportAdapter()->getName());
     }
 
     public function testSkipped(): void
@@ -189,6 +192,7 @@ class FallbackExportAdapterTest extends BaseTest
         Assert::assertTrue($this->logger->hasInfoThatContains(
             'Exporting by "Adapter2" adapter.'
         ));
+        Assert::assertSame('Adapter2', $fallbackAdapter->getUsedExportAdapter()->getName());
     }
 
     private function createDummyExportConfig(): ExportConfig
