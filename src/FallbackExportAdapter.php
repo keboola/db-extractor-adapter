@@ -24,6 +24,8 @@ class FallbackExportAdapter implements ExportAdapter
     /** @var ExportAdapter[] */
     protected array $adapters;
 
+    protected ?ExportAdapter $usedExportAdapter = null;
+
     /**
      * @param ExportAdapter[] $adapters
      */
@@ -46,23 +48,22 @@ class FallbackExportAdapter implements ExportAdapter
     {
         $iterator = new ArrayIterator($this->adapters);
         while ($iterator->valid()) {
-            /** @var ExportAdapter $adapter */
-            $adapter = $iterator->current();
+            $this->usedExportAdapter = $iterator->current();
 
             try {
-                $this->logger->info(sprintf('Exporting by "%s" adapter.', $adapter->getName()));
-                return $adapter->export($exportConfig, $csvFilePath);
+                $this->logger->info(sprintf('Exporting by "%s" adapter.', $this->usedExportAdapter->getName()));
+                return $this->usedExportAdapter->export($exportConfig, $csvFilePath);
             } catch (Throwable $e) {
                 if ($e instanceof AdapterSkippedException) {
                     $this->logger->info(sprintf(
                         'Adapter "%s" skipped: %s',
-                        $adapter->getName(),
+                        $this->usedExportAdapter->getName(),
                         $e->getMessage()
                     ));
                 } else {
                     $this->logger->warning(sprintf(
                         'Export by "%s" adapter failed: %s',
-                        $adapter->getName(),
+                        $this->usedExportAdapter->getName(),
                         $e->getMessage()
                     ));
                 }
@@ -78,5 +79,10 @@ class FallbackExportAdapter implements ExportAdapter
         }
 
         throw new InvalidStateException('At least one adapter must be specified.');
+    }
+
+    public function getUsedExportAdapter(): ?ExportAdapter
+    {
+        return $this->usedExportAdapter;
     }
 }
