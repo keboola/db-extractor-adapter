@@ -12,7 +12,7 @@ COPY docker/composer-install.sh /tmp/composer-install.sh
 COPY docker/MariaDB_odbc_driver_template.ini /etc/MariaDB_odbc_driver_template.ini
 
 # MariaDB ODBC driver package is in backports
-RUN printf "deb http://httpredir.debian.org/debian buster-backports main non-free" \
+RUN printf "deb http://archive.debian.org/debian buster-backports main non-free" \
     > /etc/apt/sources.list.d/backports.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
