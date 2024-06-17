@@ -3,6 +3,8 @@
     "description": "Set of connection adapters for DB extractors.",
     "type": "library",
     "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "authors": [
         {
             "name": "Keboola",
@@ -24,7 +26,7 @@
         "ext-iconv": "*",
         "keboola/common-exceptions": "^1.0",
         "keboola/csv": "^3.2",
-        "keboola/db-extractor-config": "^1.15",
+        "keboola/db-extractor-config": "dev-adamvyborny-PST-1416-update-php-component",
         "keboola/db-extractor-table-format": "^3.7",
         "keboola/retry": "^0.5",
         "psr/log": "^1.1"
