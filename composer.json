@@ -27,6 +27,7 @@
         "keboola/db-extractor-config": "^1.15",
         "keboola/db-extractor-table-format": "^3.7",
         "keboola/retry": "^0.5",
+        "keboola/ssh-tunnel": "^2.2",
         "psr/log": "^1.1"
     },
     "require-dev": {

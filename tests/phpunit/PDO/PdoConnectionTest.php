@@ -6,9 +6,10 @@ namespace Keboola\DbExtractor\Adapter\Tests\PDO;
 
 use Keboola\CommonExceptions\UserExceptionInterface;
 use Keboola\DbExtractor\Adapter\Exception\DeadConnectionException;
-use Keboola\DbExtractor\Adapter\PDO\PdoConnection;
+use Keboola\DbExtractor\Adapter\Exception\SshTunnelClosedException;
 use Keboola\DbExtractor\Adapter\Tests\BaseTest;
 use Keboola\DbExtractor\Adapter\Tests\Traits\PdoCreateConnectionTrait;
+use Keboola\DbExtractor\Adapter\Tests\Traits\SshTunnelsTrait;
 use Keboola\DbExtractor\Adapter\ValueObject\QueryResult;
 use PDO;
 use PHPUnit\Framework\Assert;
@@ -16,6 +17,7 @@ use PHPUnit\Framework\Assert;
 class PdoConnectionTest extends BaseTest
 {
     use PdoCreateConnectionTrait;
+    use SshTunnelsTrait;
 
     public function testInvalidHost(): void
     {
@@ -86,6 +88,36 @@ class PdoConnectionTest extends BaseTest
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
             Assert::assertStringContainsString('MySQL server has gone away', $e->getMessage());
+        }
+    }
+
+    public function testTestConnectionFailedClosedSshTunnel(): void
+    {
+        $this->openSshTunnel();
+        $connection = $this->createPdoConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $this->closeSshTunnels();
+
+        try {
+            $connection->testConnection();
+            Assert::fail('Exception expected.');
+        } catch (SshTunnelClosedException $e) {
+            Assert::assertStringContainsString('SSH tunnel has been closed', $e->getMessage());
+        }
+    }
+
+    public function testTestConnectionFailedOpenSshTunnel(): void
+    {
+        $proxy = $this->createProxyToDb();
+        $this->openSshTunnel(remoteHost: self::TOXIPROXY_HOST, remotePort: (int) $proxy->getListenPort());
+        $connection = $this->createPdoConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $this->makeProxyDown($proxy);
+
+        try {
+            $connection->testConnection();
+            Assert::fail('Exception expected.');
+        } catch (UserExceptionInterface $e) {
+            Assert::assertStringContainsString('MySQL server has gone away', $e->getMessage());
+            $this->closeSshTunnels();
         }
     }
 
@@ -171,6 +203,38 @@ class PdoConnectionTest extends BaseTest
 
         for ($attempt=1; $attempt < $retries; $attempt++) {
             Assert::assertTrue($this->logger->hasInfoThatContains("Retrying... [{$attempt}x]"));
+        }
+    }
+
+    public function testQueryFailedClosedSshTunnel(): void
+    {
+        $this->openSshTunnel();
+        $connection = $this->createPdoConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $this->closeSshTunnels();
+
+        $retries = 4;
+        try {
+            $connection->query('SELECT 123 as X, 456 as Y', $retries);
+            Assert::fail('Exception expected.');
+        } catch (SshTunnelClosedException $e) {
+            Assert::assertStringContainsString('SSH tunnel has been closed', $e->getMessage());
+        }
+    }
+
+    public function testQueryFailedOpenSshTunnel(): void
+    {
+        $proxy = $this->createProxyToDb();
+        $this->openSshTunnel(remoteHost: self::TOXIPROXY_HOST, remotePort: (int) $proxy->getListenPort());
+        $connection = $this->createPdoConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $this->makeProxyDown($proxy);
+
+        $retries = 4;
+        try {
+            $connection->query('SELECT 123 as X, 456 as Y', $retries);
+            Assert::fail('Exception expected.');
+        } catch (UserExceptionInterface $e) {
+            Assert::assertStringContainsString('MySQL server has gone away', $e->getMessage());
+            $this->closeSshTunnels();
         }
     }
 
