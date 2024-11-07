@@ -46,6 +46,7 @@ class PdoConnection extends BaseDbConnection
         $this->password = $password;
         $this->options = $options;
         $this->init = $init;
+        $this->detectSshUsageInDsn($dsn);
         parent::__construct($logger, $connectMaxRetries, $userInitQueries);
     }
 
