@@ -490,7 +490,7 @@ class DsnParserTest extends TestCase
         self::assertSame($port, $parsedDsn->parsePort());
     }
 
-    protected static function provideInvalidDNSs(): iterable
+    protected static function provideInvalidDSNs(): iterable
     {
         yield 'missing port attribute #1' => [
             'mysql:host=127.0.0.1;dbname=testdb',
@@ -524,7 +524,7 @@ class DsnParserTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideInvalidDNSs */
+    /** @dataProvider provideInvalidDSNs */
     public function testInvalidDSNsAndPorts(string $dsn): void
     {
         $parsedDsn = new DsnParser($dsn);
