@@ -16,7 +16,7 @@ trait PdoCreateConnectionTrait
         ?int $port = null,
         int $connectRetries = PdoConnection::CONNECT_DEFAULT_MAX_RETRIES,
     ): PdoConnection {
-        $dns = sprintf(
+        $dsn = sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=utf8',
             $host ?? getenv('DB_HOST'),
             $port ?? getenv('DB_PORT'),
@@ -24,7 +24,7 @@ trait PdoCreateConnectionTrait
         );
         return new PdoConnection(
             $this->logger,
-            $dns,
+            $dsn,
             (string) getenv('DB_USER'),
             (string) getenv('DB_PASSWORD'),
             [],

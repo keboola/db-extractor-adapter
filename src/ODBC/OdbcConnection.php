@@ -52,6 +52,7 @@ class OdbcConnection extends BaseDbConnection
         $this->init = $init;
         $this->odbcCursorType = $odbcCursorType;
         $this->odbcCursorMode = $odbcCursorMode;
+        $this->detectSshUsageInDsn($dsn);
         parent::__construct($logger, $connectMaxRetries, $initQueries);
     }
 

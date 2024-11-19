@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Keboola\DbExtractor\Adapter\Connection;
 
+use Keboola\DbExtractor\Adapter\DsnParser;
 use Keboola\DbExtractor\Adapter\Exception\DeadConnectionException;
+use Keboola\DbExtractor\Adapter\Exception\SshTunnelClosedException;
 use Keboola\DbExtractor\Adapter\Exception\UserException;
 use Keboola\DbExtractor\Adapter\Exception\UserRetriedException;
 use Keboola\DbExtractor\Adapter\ValueObject\QueryResult;
@@ -25,6 +27,8 @@ abstract class BaseDbConnection implements DbConnection
     protected int $connectMaxRetries;
 
     protected array $userInitQueries;
+
+    private ?int $sshLocalPort = null;
 
     /**
      * Returns low-level connection resource or object.
@@ -100,11 +104,14 @@ abstract class BaseDbConnection implements DbConnection
         try {
             return $this->doQuery($query);
         } catch (Throwable $e) {
+            if ($this->isSsh() && !$this->isSshTunnelOpen()) {
+                throw new SshTunnelClosedException('SSH tunnel has been closed.');
+            }
             try {
                 // Reconnect
                 $this->connect();
             } catch (Throwable $e) {
-            };
+            }
             throw $e;
         }
     }
@@ -147,5 +154,35 @@ abstract class BaseDbConnection implements DbConnection
             $this->logger->info(sprintf('Running query "%s".', $userInitQuery));
             $this->doQuery($userInitQuery);
         }
+    }
+
+    protected function isSsh(): bool
+    {
+        return $this->sshLocalPort !== null;
+    }
+
+    protected function isSshTunnelOpen(): bool
+    {
+        if (!$this->isSsh()) {
+            return false;
+        }
+
+        $connection = @fsockopen('127.0.0.1', $this->sshLocalPort ?? -1);
+        if (is_resource($connection)) {
+            fclose($connection);
+            return true;
+        }
+
+        return false;
+    }
+
+    protected function detectSshUsageInDsn(string $dsn): void
+    {
+        $parsedDsn = new DsnParser($dsn);
+        if (!$parsedDsn->isLocal()) {
+            return;
+        }
+
+        $this->sshLocalPort = $parsedDsn->parsePort() ?: null;
     }
 }

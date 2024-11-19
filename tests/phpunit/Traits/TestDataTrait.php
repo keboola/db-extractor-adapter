@@ -12,13 +12,13 @@ trait TestDataTrait
 
     protected function createTestConnection(): PDO
     {
-        $dns = sprintf(
+        $dsn = sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=utf8',
             getenv('DB_HOST'),
             getenv('DB_PORT'),
             $this->getDatabase(),
         );
-        return new PDO($dns, (string) getenv('DB_USER'), (string) getenv('DB_PASSWORD'), [
+        return new PDO($dsn, (string) getenv('DB_USER'), (string) getenv('DB_PASSWORD'), [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         ]);
     }
