@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace Keboola\DbExtractor\Adapter\Tests;
 
-use Keboola\CommonExceptions\UserExceptionInterface;
+use Keboola\DbExtractor\Adapter\Exception\SshTunnelClosedException;
 use Keboola\DbExtractor\Adapter\Exception\UserRetriedException;
 use Keboola\DbExtractor\Adapter\ExportAdapter;
 use Keboola\DbExtractor\Adapter\Query\QueryFactory;
 use Keboola\DbExtractor\Adapter\ResultWriter\DefaultResultWriter;
 use Keboola\DbExtractor\Adapter\ResultWriter\ResultWriter;
+use Keboola\DbExtractor\Adapter\Tests\Traits\SshTunnelsTrait;
 use Keboola\DbExtractor\Adapter\ValueObject\ExportResult;
 use Keboola\DbExtractorConfig\Configuration\ValueObject\ExportConfig;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\Constraint\StringContains;
+use Throwable;
 
 abstract class AbstractExportAdapterTest extends BaseTest
 {
+    use SshTunnelsTrait;
+
     abstract protected function createExportAdapter(
         array $state = [],
         ?string $host = null,
@@ -101,6 +105,26 @@ END;
 
         for ($attempt=1; $attempt < $retries; $attempt++) {
             Assert::assertTrue($this->logger->hasInfoThatContains("Retrying... [{$attempt}x]"));
+        }
+    }
+
+    public function testExportFailedClosedSshTunnel(): void
+    {
+        $this->createTownsTable();
+        $config = $this->createExportConfig([
+            'table' => ['tableName' => 'towns', 'schema' => (string) getenv('DB_DATABASE')],
+        ]);
+
+        $this->openSshTunnel();
+        $exportAdapter = $this->createExportAdapter([], '127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $this->closeSshTunnels();
+
+        try {
+            $exportAdapter->export($config, $this->getCsvFilePath());
+            $this->fail('Exception expected');
+        } catch (Throwable $e) {
+            Assert::assertInstanceOf(SshTunnelClosedException::class, $e);
+            Assert::assertSame('SSH tunnel has been closed.', $e->getMessage());
         }
     }
 

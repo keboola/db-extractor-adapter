@@ -8,6 +8,7 @@ use Keboola\CommonExceptions\UserExceptionInterface;
 use Keboola\Csv\Exception as CsvException;
 use Keboola\DbExtractor\Adapter\Connection\DbConnection;
 use Keboola\DbExtractor\Adapter\Exception\ApplicationException;
+use Keboola\DbExtractor\Adapter\Exception\SshTunnelClosedException;
 use Keboola\DbExtractor\Adapter\Exception\UserException;
 use Keboola\DbExtractor\Adapter\Exception\UserRetriedException;
 use Keboola\DbExtractor\Adapter\Query\QueryFactory;
@@ -79,6 +80,10 @@ abstract class BaseExportAdapter implements ExportAdapter
 
     protected function handleDbError(Throwable $e, int $maxRetries, ?string $outputTable = null): UserExceptionInterface
     {
+        if ($e instanceof SshTunnelClosedException) {
+            throw $e;
+        }
+
         $message = $outputTable ? sprintf('[%s]: ', $outputTable) : '';
         $message .= sprintf('DB query failed: %s', $e->getMessage());
 
