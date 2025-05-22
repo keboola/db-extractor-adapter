@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\DbExtractor\Adapter\ODBC;
 
+use ErrorException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\DbExtractor\Adapter\Metadata\MetadataProvider;
 use Keboola\DbExtractor\TableResultFormat\Metadata\Builder\ColumnBuilder;
@@ -170,6 +171,7 @@ class OdbcNativeMetadataProvider implements MetadataProvider
     /**
      * @param array|InputTable[] $whitelist
      * @return array[string][]
+     * @throws ErrorException
      */
     protected function queryPrimaryKeys(array $whitelist): array
     {
@@ -177,20 +179,28 @@ class OdbcNativeMetadataProvider implements MetadataProvider
         $pks = [];
 
         foreach ($whitelist as $whitelistedTable) {
-            $result = odbc_primarykeys(
-                $this->connection->getConnection(),
-                $this->onlyFromCatalog,
-                $this->onlyFromSchema,
-                // % means ALL, see odbc_columns docs
-                $whitelistedTable ? $whitelistedTable->getName() : '%',
-            );
-            while ($pk = odbc_fetch_array($result)) {
-                if ($this->isTableIgnored($pk)) {
-                    continue;
+            $result = null;
+            try {
+                $result = odbc_primarykeys(
+                    $this->connection->getConnection(),
+                    $this->onlyFromCatalog,
+                    $this->onlyFromSchema,
+                    // % means ALL, see odbc_columns docs
+                    $whitelistedTable ? $whitelistedTable->getName() : '%',
+                );
+                while ($pk = odbc_fetch_array($result)) {
+                    if ($this->isTableIgnored($pk)) {
+                        continue;
+                    }
+                    $pks[$this->getColumnId($pk)] = $pk;
                 }
-                $pks[$this->getColumnId($pk)] = $pk;
+                odbc_free_result($result);
+            } catch (ErrorException $e) {
+                // some db vendors (like Hive) do not support primary keys
+                if (!str_contains($e->getMessage(), 'NullPointerException')) {
+                    throw $e;
+                }
             }
-            odbc_free_result($result);
         }
 
         return $pks;
