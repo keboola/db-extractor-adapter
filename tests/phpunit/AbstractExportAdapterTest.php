@@ -115,8 +115,8 @@ END;
             'table' => ['tableName' => 'towns', 'schema' => (string) getenv('DB_DATABASE')],
         ]);
 
-        $this->openSshTunnel();
-        $exportAdapter = $this->createExportAdapter([], '127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $sshPort = $this->openSshTunnel();
+        $exportAdapter = $this->createExportAdapter([], '127.0.0.1', $sshPort);
         $this->closeSshTunnels();
 
         try {

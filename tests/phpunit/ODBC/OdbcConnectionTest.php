@@ -93,8 +93,8 @@ class OdbcConnectionTest extends BaseTest
 
     public function testTestConnectionFailedClosedSshTunnel(): void
     {
-        $this->openSshTunnel();
-        $connection = $this->createOdbcConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $sshPort = $this->openSshTunnel();
+        $connection = $this->createOdbcConnection('127.0.0.1', $sshPort);
         $this->closeSshTunnels();
 
         try {
@@ -108,8 +108,8 @@ class OdbcConnectionTest extends BaseTest
     public function testTestConnectionFailedOpenSshTunnel(): void
     {
         $proxy = $this->createProxyToDb();
-        $this->openSshTunnel(remoteHost: self::TOXIPROXY_HOST, remotePort: (int) $proxy->getListenPort());
-        $connection = $this->createOdbcConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $sshPort = $this->openSshTunnel(remoteHost: self::TOXIPROXY_HOST, remotePort: (int) $proxy->getListenPort());
+        $connection = $this->createOdbcConnection('127.0.0.1', $sshPort);
         $this->makeProxyDown($proxy);
 
         try {
@@ -208,8 +208,8 @@ class OdbcConnectionTest extends BaseTest
 
     public function testQueryFailedClosedSshTunnel(): void
     {
-        $this->openSshTunnel();
-        $connection = $this->createOdbcConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $sshPort = $this->openSshTunnel();
+        $connection = $this->createOdbcConnection('127.0.0.1', $sshPort);
         $this->closeSshTunnels();
 
         $retries = 4;
@@ -224,8 +224,8 @@ class OdbcConnectionTest extends BaseTest
     public function testQueryFailedOpenSshTunnel(): void
     {
         $proxy = $this->createProxyToDb();
-        $this->openSshTunnel(remoteHost: self::TOXIPROXY_HOST, remotePort: (int) $proxy->getListenPort());
-        $connection = $this->createOdbcConnection('127.0.0.1', self::DEFAULT_SSH_LOCAL_PORT);
+        $sshPort = $this->openSshTunnel(remoteHost: self::TOXIPROXY_HOST, remotePort: (int) $proxy->getListenPort());
+        $connection = $this->createOdbcConnection('127.0.0.1', $sshPort);
         $this->makeProxyDown($proxy);
 
         $retries = 4;
