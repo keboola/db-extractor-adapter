@@ -11,9 +11,8 @@ COPY docker/php-prod.ini /usr/local/etc/php/php.ini
 COPY docker/composer-install.sh /tmp/composer-install.sh
 COPY docker/MariaDB_odbc_driver_template.ini /etc/MariaDB_odbc_driver_template.ini
 
-# MariaDB ODBC driver package is in backports
-RUN printf "deb http://archive.debian.org/debian buster-backports main non-free" \
-    > /etc/apt/sources.list.d/backports.list
+# MariaDB ODBC driver package - use bookworm repositories
+# Note: Removed buster-backports reference for bookworm compatibility
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ssh \
@@ -35,8 +34,8 @@ ENV LANGUAGE=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# PDO mysql
-RUN docker-php-ext-install pdo_mysql
+# PDO mysql and sockets extension
+RUN docker-php-ext-install pdo_mysql sockets
 
 # PHP ODBC
 # https://github.com/docker-library/php/issues/103#issuecomment-353674490
