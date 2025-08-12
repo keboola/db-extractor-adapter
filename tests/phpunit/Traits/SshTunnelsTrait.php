@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\DbExtractor\Adapter\Tests\Traits;
 
 use Keboola\SSHTunnel\SSH;
+use RuntimeException;
 use Symfony\Component\Process\Process;
 
 trait SshTunnelsTrait
@@ -22,9 +23,9 @@ trait SshTunnelsTrait
         if ($localPort === null) {
             $localPort = $this->findAvailablePort();
         }
-        
+
         $this->currentSshLocalPort = $localPort;
-        
+
         $ssh = new SSH();
         $ssh->openTunnel([
             'user' => 'root',
@@ -35,14 +36,14 @@ trait SshTunnelsTrait
             'remotePort' => $remotePort,
             'privateKey' => $this->getPrivateKey(),
         ]);
-        
+
         return $localPort;
     }
 
     protected function getCurrentSshLocalPort(): int
     {
         if ($this->currentSshLocalPort === null) {
-            throw new \RuntimeException('No SSH tunnel has been opened');
+            throw new RuntimeException('No SSH tunnel has been opened');
         }
         return $this->currentSshLocalPort;
     }
@@ -60,27 +61,27 @@ trait SshTunnelsTrait
         // Try ports starting from the default port
         $startPort = self::DEFAULT_SSH_LOCAL_PORT;
         $maxAttempts = 100; // Try up to 100 ports
-        
+
         for ($i = 0; $i < $maxAttempts; $i++) {
             $port = $startPort + $i;
             if ($this->isPortAvailable($port)) {
                 return $port;
             }
         }
-        
-        throw new \RuntimeException('Could not find available port for SSH tunnel');
+
+        throw new RuntimeException('Could not find available port for SSH tunnel');
     }
-    
+
     private function isPortAvailable(int $port): bool
     {
         $socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($socket === false) {
             return false;
         }
-        
+
         $result = @socket_bind($socket, '127.0.0.1', $port);
         @socket_close($socket);
-        
+
         return $result !== false;
     }
 
