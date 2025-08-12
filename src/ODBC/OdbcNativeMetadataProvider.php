@@ -197,7 +197,9 @@ class OdbcNativeMetadataProvider implements MetadataProvider
                 odbc_free_result($result);
             } catch (ErrorException $e) {
                 // some db vendors (like Hive) do not support primary keys
-                if (!str_contains($e->getMessage(), 'NullPointerException')) {
+                if (!str_contains($e->getMessage(), 'NullPointerException')
+                    && !str_contains($e->getMessage(), 'SQL state S in SQLPrimaryKeys')
+                ) {
                     throw $e;
                 }
             }
