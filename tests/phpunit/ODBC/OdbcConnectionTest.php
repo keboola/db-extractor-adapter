@@ -104,7 +104,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
-                new StringContains('MySQL server has gone away'),             // Alternative old format
             ));
         }
     }
@@ -155,7 +154,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
-                new StringContains('MySQL server has gone away'),             // Alternative old format
             ));
         }
     }
@@ -200,7 +198,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
-                new StringContains('MySQL server has gone away'),             // Alternative old format
             ));
         }
     }
@@ -230,7 +227,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
-                new StringContains('MySQL server has gone away'),             // Alternative old format
             ));
         }
 
@@ -303,7 +299,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
-                new StringContains('MySQL server has gone away'),             // Alternative old format
             ));
         }
 
