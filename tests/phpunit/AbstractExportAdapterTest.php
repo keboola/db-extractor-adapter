@@ -101,7 +101,6 @@ END;
                 new StringContains('Lost connection to MySQL server'),        // Old ODBC driver
                 new StringContains('MySQL server has gone away'),             // PDO and old ODBC
                 new StringContains('Lost connection to server'),              // New ODBC driver
-                new StringContains('Connection was killed'),                  // Alternative format
                 new StringContains('handshake: reading initial communication packet'), // New driver detailed error
             ));
         }

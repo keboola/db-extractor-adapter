@@ -31,7 +31,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Unknown MySQL server host \'invalid\''), // Old driver
                 new StringContains('Unknown server host \'invalid\''),       // New driver
-                new StringContains('Name or service not known'),             // Alternative format
             ));
         }
 
@@ -54,7 +53,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Unknown MySQL server host \'invalid\''), // Old driver
                 new StringContains('Unknown server host \'invalid\''),       // New driver
-                new StringContains('Name or service not known'),             // Alternative format
             ));
         }
 
@@ -76,7 +74,6 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Unknown MySQL server host \'invalid\''), // Old driver
                 new StringContains('Unknown server host \'invalid\''),       // New driver
-                new StringContains('Name or service not known'),             // Alternative format
             ));
         }
 
@@ -108,7 +105,6 @@ class OdbcConnectionTest extends BaseTest
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
                 new StringContains('MySQL server has gone away'),             // Alternative old format
-                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
     }
@@ -160,7 +156,6 @@ class OdbcConnectionTest extends BaseTest
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
                 new StringContains('MySQL server has gone away'),             // Alternative old format
-                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
     }
@@ -206,7 +201,6 @@ class OdbcConnectionTest extends BaseTest
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
                 new StringContains('MySQL server has gone away'),             // Alternative old format
-                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
     }
@@ -237,7 +231,6 @@ class OdbcConnectionTest extends BaseTest
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
                 new StringContains('MySQL server has gone away'),             // Alternative old format
-                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
 
@@ -311,7 +304,6 @@ class OdbcConnectionTest extends BaseTest
                 new StringContains('Lost connection to MySQL server'),        // Old driver
                 new StringContains('Lost connection to server'),              // New driver
                 new StringContains('MySQL server has gone away'),             // Alternative old format
-                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
 
