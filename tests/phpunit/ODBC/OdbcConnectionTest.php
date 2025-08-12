@@ -12,6 +12,7 @@ use Keboola\DbExtractor\Adapter\Tests\Traits\OdbcCreateConnectionTrait;
 use Keboola\DbExtractor\Adapter\Tests\Traits\SshTunnelsTrait;
 use Keboola\DbExtractor\Adapter\ValueObject\QueryResult;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Constraint\StringContains;
 
 class OdbcConnectionTest extends BaseTest
 {
@@ -28,9 +29,9 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertStringContainsString('Error connecting to DB: ', $e->getMessage());
             // Handle both old and new ODBC driver error formats
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Unknown MySQL server host \'invalid\''), // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Unknown server host \'invalid\''),       // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('Name or service not known')              // Alternative format
+                new StringContains('Unknown MySQL server host \'invalid\''), // Old driver
+                new StringContains('Unknown server host \'invalid\''),       // New driver
+                new StringContains('Name or service not known'),             // Alternative format
             ));
         }
 
@@ -51,9 +52,9 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertStringContainsString('Error connecting to DB: ', $e->getMessage());
             // Handle both old and new ODBC driver error formats
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Unknown MySQL server host \'invalid\''), // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Unknown server host \'invalid\''),       // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('Name or service not known')              // Alternative format
+                new StringContains('Unknown MySQL server host \'invalid\''), // Old driver
+                new StringContains('Unknown server host \'invalid\''),       // New driver
+                new StringContains('Name or service not known'),             // Alternative format
             ));
         }
 
@@ -73,9 +74,9 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertStringContainsString('Error connecting to DB: ', $e->getMessage());
             // Handle both old and new ODBC driver error formats
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Unknown MySQL server host \'invalid\''), // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Unknown server host \'invalid\''),       // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('Name or service not known')              // Alternative format
+                new StringContains('Unknown MySQL server host \'invalid\''), // Old driver
+                new StringContains('Unknown server host \'invalid\''),       // New driver
+                new StringContains('Name or service not known'),             // Alternative format
             ));
         }
 
@@ -104,10 +105,10 @@ class OdbcConnectionTest extends BaseTest
         } catch (UserExceptionInterface $e) {
             // Handle both old and new ODBC driver error formats for connection loss
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to MySQL server'),        // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to server'),              // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('MySQL server has gone away'),             // Alternative old format
-                new \PHPUnit\Framework\Constraint\StringContains('Connection was killed')                   // Alternative format
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+                new StringContains('MySQL server has gone away'),             // Alternative old format
+                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
     }
@@ -156,10 +157,10 @@ class OdbcConnectionTest extends BaseTest
         } catch (UserExceptionInterface $e) {
             // Handle both old and new ODBC driver error formats for connection loss
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to MySQL server'),        // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to server'),              // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('MySQL server has gone away'),             // Alternative old format
-                new \PHPUnit\Framework\Constraint\StringContains('Connection was killed')                   // Alternative format
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+                new StringContains('MySQL server has gone away'),             // Alternative old format
+                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
     }
@@ -202,10 +203,10 @@ class OdbcConnectionTest extends BaseTest
             Assert::assertStringContainsString('Dead connection:', $e->getMessage());
             // Handle both old and new ODBC driver error formats for connection loss
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to MySQL server'),        // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to server'),              // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('MySQL server has gone away'),             // Alternative old format
-                new \PHPUnit\Framework\Constraint\StringContains('Connection was killed')                   // Alternative format
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+                new StringContains('MySQL server has gone away'),             // Alternative old format
+                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
     }
@@ -233,10 +234,10 @@ class OdbcConnectionTest extends BaseTest
         } catch (UserExceptionInterface $e) {
             // Handle both old and new ODBC driver error formats for connection loss
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to MySQL server'),        // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to server'),              // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('MySQL server has gone away'),             // Alternative old format
-                new \PHPUnit\Framework\Constraint\StringContains('Connection was killed')                   // Alternative format
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+                new StringContains('MySQL server has gone away'),             // Alternative old format
+                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
 
@@ -307,10 +308,10 @@ class OdbcConnectionTest extends BaseTest
         } catch (UserExceptionInterface $e) {
             // Handle both old and new ODBC driver error formats for connection loss
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to MySQL server'),        // Old driver
-                new \PHPUnit\Framework\Constraint\StringContains('Lost connection to server'),              // New driver
-                new \PHPUnit\Framework\Constraint\StringContains('MySQL server has gone away'),             // Alternative old format
-                new \PHPUnit\Framework\Constraint\StringContains('Connection was killed')                   // Alternative format
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+                new StringContains('MySQL server has gone away'),             // Alternative old format
+                new StringContains('Connection was killed'),                  // Alternative format
             ));
         }
 
