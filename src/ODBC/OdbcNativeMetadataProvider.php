@@ -197,8 +197,11 @@ class OdbcNativeMetadataProvider implements MetadataProvider
                 odbc_free_result($result);
             } catch (ErrorException $e) {
                 // some db vendors (like Hive) do not support primary keys
+                // Newer MariaDB ODBC drivers may have issues with schemas in primary keys
                 if (!str_contains($e->getMessage(), 'NullPointerException')
                     && !str_contains($e->getMessage(), 'SQL state S in SQLPrimaryKeys')
+                    && !str_contains($e->getMessage(), 'Schemas are not supported')
+                    && !str_contains($e->getMessage(), 'SQL state S1C00')
                 ) {
                     throw $e;
                 }

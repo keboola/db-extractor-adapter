@@ -133,7 +133,11 @@ class OdbcConnectionTest extends BaseTest
             $connection->testConnection();
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            // Handle both old and new ODBC driver error formats for connection loss
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+            ));
             $this->closeSshTunnels();
         }
     }
@@ -262,7 +266,11 @@ class OdbcConnectionTest extends BaseTest
             $connection->query('SELECT 123 as X, 456 as Y', $retries);
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            // Handle both old and new ODBC driver error formats for connection loss
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                new StringContains('Lost connection to MySQL server'),        // Old driver
+                new StringContains('Lost connection to server'),              // New driver
+            ));
             $this->closeSshTunnels();
         }
     }
