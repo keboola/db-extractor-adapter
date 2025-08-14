@@ -17,7 +17,7 @@ trait OdbcCreateConnectionTrait
         int $connectRetries = OdbcConnection::CONNECT_DEFAULT_MAX_RETRIES,
     ): OdbcConnection {
         $dsn = sprintf(
-            'Driver={MariaDB ODBC Driver};SERVER=%s;PORT=%d;DATABASE=%s;',
+            'Driver={MySQL ODBC 8.4 Unicode Driver};SERVER=%s;PORT=%d;DATABASE=%s;',
             $host ?? getenv('DB_HOST'),
             $port ?? getenv('DB_PORT'),
             getenv('DB_DATABASE'),

@@ -86,7 +86,7 @@ class OdbcConnectionTest extends BaseTest
         $connection = $this->createOdbcConnection();
         $connection->testConnection();
         Assert::assertTrue($this->logger->hasInfoThatContains(
-            'Creating ODBC connection to "Driver={MariaDB ODBC Driver};SERVER=mariadb;PORT=3306;DATABASE=testdb;".',
+            'Creating ODBC connection to "Driver={MySQL ODBC 8.4 Unicode Driver};SERVER=mysql;PORT=3306;DATABASE=testdb;".',
         ));
     }
 

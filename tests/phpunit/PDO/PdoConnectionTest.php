@@ -73,7 +73,7 @@ class PdoConnectionTest extends BaseTest
         $connection = $this->createPdoConnection();
         $connection->testConnection();
         Assert::assertTrue($this->logger->hasInfoThatContains(
-            'Creating PDO connection to "mysql:host=mariadb;port=3306;dbname=testdb;charset=utf8".',
+            'Creating PDO connection to "mysql:host=mysql;port=3306;dbname=testdb;charset=utf8".',
         ));
     }
 

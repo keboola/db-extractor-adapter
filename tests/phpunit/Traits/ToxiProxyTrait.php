@@ -18,7 +18,7 @@ trait ToxiProxyTrait
 
     protected function createProxyToDb(): Proxy
     {
-        return $this->toxiproxy->create('mariadb_proxy', 'mariadb:3306');
+        return $this->toxiproxy->create('mysql_proxy', 'mysql:3306');
     }
 
     protected function clearAllProxies(): void

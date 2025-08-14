@@ -9,50 +9,49 @@ WORKDIR /code/
 
 COPY docker/php-prod.ini /usr/local/etc/php/php.ini
 COPY docker/composer-install.sh /tmp/composer-install.sh
-COPY docker/MariaDB_odbc_driver_template.ini /etc/MariaDB_odbc_driver_template.ini
+# MySQL ODBC driver configuration
+ENV MYSQL_ODBC_VERSION=8.4.0
 
-# Install system dependencies including unixODBC and MariaDB ODBC driver 3.2.6
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ssh \
         git \
         locales \
         unzip \
-        curl \
         unixodbc \
         unixodbc-dev \
         odbcinst \
-        libmariadb3 \
+        wget \
+        libssl3 \
+	&& rm -r /var/lib/apt/lists/* \
 	&& sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen \
 	&& locale-gen \
 	&& chmod +x /tmp/composer-install.sh \
 	&& /tmp/composer-install.sh \
-	&& echo "Installing MariaDB ODBC driver 3.2.6 from official MariaDB repository..." \
-	&& ARCH=$(dpkg --print-architecture) \
-	&& echo "Detected architecture: $ARCH" \
-	&& cd /tmp \
-	&& curl -L "https://dlm.mariadb.com/4275282/Connectors/odbc/connector-odbc-3.2.6/mariadb-connector-odbc_3.2.6-1+maria~bookworm_${ARCH}.deb" -o mariadb-odbc.deb \
-	&& dpkg -i mariadb-odbc.deb \
-	&& rm -f mariadb-odbc.deb \
-	&& echo "Finding installed ODBC driver location..." \
-	&& DRIVER_PATH=$(find /usr -name "libmaodbc.so" -type f 2>/dev/null | head -1) \
-	&& if [ -z "$DRIVER_PATH" ]; then \
-		echo "ERROR: MariaDB ODBC driver not found!" && exit 1; \
-	fi \
-	&& echo "Found MariaDB ODBC driver at: $DRIVER_PATH" \
-	&& echo "Updating driver template with correct path..." \
-	&& sed -i "s|/usr/lib/x86_64-linux-gnu/odbc/libmaodbc.so|$DRIVER_PATH|" /etc/MariaDB_odbc_driver_template.ini \
-	&& echo "Registering ODBC driver..." \
-	&& odbcinst -i -d -f /etc/MariaDB_odbc_driver_template.ini \
-	&& echo "Verifying installation..." \
-	&& ls -la "$DRIVER_PATH" \
-	&& odbcinst -q -d \
-	&& rm -rf /var/lib/apt/lists/*
+	&& echo "Installing MySQL ODBC Connector..." \
+	&& MYSQL_ODBC_TAR="mysql-connector-odbc-${MYSQL_ODBC_VERSION}-linux-glibc2.28-x86-64bit.tar.gz" \
+	&& MYSQL_ODBC_URL="https://dev.mysql.com/get/Downloads/Connector-ODBC/${MYSQL_ODBC_TAR}" \
+	&& wget -q "${MYSQL_ODBC_URL}" -O "/tmp/${MYSQL_ODBC_TAR}" \
+	&& cd /tmp && tar -xzf "${MYSQL_ODBC_TAR}" \
+	&& MYSQL_ODBC_DIR=$(find /tmp -maxdepth 1 -name "mysql-connector-odbc-*" -type d) \
+	&& mkdir -p "/usr/lib/x86_64-linux-gnu/odbc" \
+	&& cp "${MYSQL_ODBC_DIR}/lib/libmyodbc8w.so" "/usr/lib/x86_64-linux-gnu/odbc/" \
+	&& cp "${MYSQL_ODBC_DIR}/lib/libmyodbc8a.so" "/usr/lib/x86_64-linux-gnu/odbc/" \
+	&& ldconfig \
+	&& rm -rf "/tmp/${MYSQL_ODBC_TAR}" "${MYSQL_ODBC_DIR}" \
+	&& echo "Registering MySQL ODBC drivers with odbcinst..." \
+	&& echo "[MySQL ODBC 8.4 Unicode Driver]" > /tmp/mysql_unicode.ini \
+	&& echo "Driver=/usr/lib/x86_64-linux-gnu/odbc/libmyodbc8w.so" >> /tmp/mysql_unicode.ini \
+	&& echo "[MySQL ODBC 8.4 ANSI Driver]" > /tmp/mysql_ansi.ini \
+	&& echo "Driver=/usr/lib/x86_64-linux-gnu/odbc/libmyodbc8a.so" >> /tmp/mysql_ansi.ini \
+	&& odbcinst -i -d -f /tmp/mysql_unicode.ini \
+	&& odbcinst -i -d -f /tmp/mysql_ansi.ini \
+	&& rm /tmp/mysql_unicode.ini /tmp/mysql_ansi.ini
 
-ENV LANGUAGE="en_US.UTF-8"
-ENV LANG="en_US.UTF-8"
-ENV LC_ALL="en_US.UTF-8"
+ENV LANGUAGE=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
-# PDO mysql and sockets extension
+# PDO mysql and sockets
 RUN docker-php-ext-install pdo_mysql sockets
 
 # PHP ODBC

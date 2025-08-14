@@ -5,13 +5,13 @@ services:
     environment:
       DB_USER: root
       DB_PASSWORD: somePassword
-      DB_HOST: mariadb
+      DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: testdb
     volumes:
       - ssh-keys:/root/.ssh:ro
     depends_on:
-      - mariadb
+      - mysql
       - toxiproxy
       - sshproxy
 
@@ -24,29 +24,38 @@ services:
   wait:
     image: waisbrot/wait
     depends_on:
-      - mariadb
+      - mysql
       - sshproxy
     environment:
-      - TARGETS=mariadb:3306,sshproxy:22
+      - TARGETS=mysql:3306,sshproxy:22
       - TIMEOUT=60
 
   toxiproxy:
     image: shopify/toxiproxy
     depends_on:
-      - mariadb
+      - mysql
 
   sshproxy:
     image: keboola/db-component-ssh-proxy:latest
     volumes:
       - ssh-keys:/root/.ssh
     links:
-      - mariadb
+      - mysql
 
-  mariadb:
-    image: mariadb:10
+  mysql:
+    image: mysql:8.0
+    platform: linux/amd64
+    command: --default-authentication-plugin=mysql_native_password
     environment:
-      MYSQL_DATABASE: testdb
-      MYSQL_ROOT_PASSWORD: somePassword
+      - MYSQL_DATABASE=testdb
+      - MYSQL_ROOT_PASSWORD=somePassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      timeout: 60s
+      retries: 10
 
 volumes:
   ssh-keys:
+  mysql_data:

@@ -45,7 +45,7 @@ class OdbcNativeMetadataProviderTest extends BaseTest
         Assert::assertSame(1, $table1Cols[0]->getOrdinalPosition());
         // ----
         Assert::assertSame('id', $table1Cols[0]->getName());
-        Assert::assertSame('INT', $table1Cols[0]->getType());
+        Assert::assertSame('int', $table1Cols[0]->getType());
         Assert::assertFalse($table1Cols[0]->hasLength());
         Assert::assertSame(true, $table1Cols[0]->isPrimaryKey());
         Assert::assertSame(true, $table1Cols[0]->isNullable());
@@ -82,7 +82,7 @@ class OdbcNativeMetadataProviderTest extends BaseTest
         Assert::assertCount(4, $table2Cols);
         // ----
         Assert::assertSame('id', $table2Cols[0]->getName());
-        Assert::assertSame('INT', $table2Cols[0]->getType());
+        Assert::assertSame('int', $table2Cols[0]->getType());
         Assert::assertFalse($table2Cols[0]->hasLength());
         Assert::assertSame(false, $table2Cols[0]->isPrimaryKey()); // primary keys is not reported for view
         Assert::assertSame(false, $table2Cols[0]->isNullable());
@@ -119,7 +119,7 @@ class OdbcNativeMetadataProviderTest extends BaseTest
         Assert::assertCount(3, $table3Cols);
         // ----
         Assert::assertSame('id', $table3Cols[0]->getName());
-        Assert::assertSame('INT', $table3Cols[0]->getType());
+        Assert::assertSame('int', $table3Cols[0]->getType());
         Assert::assertFalse($table3Cols[0]->hasLength());
         Assert::assertSame(true, $table3Cols[0]->isPrimaryKey());
         Assert::assertSame(true, $table3Cols[0]->isNullable());
@@ -135,7 +135,7 @@ class OdbcNativeMetadataProviderTest extends BaseTest
         // ----
         Assert::assertSame(3, $table3Cols[2]->getOrdinalPosition());
         Assert::assertSame('population', $table3Cols[2]->getName());
-        Assert::assertSame('INT', $table3Cols[2]->getType());
+        Assert::assertSame('int', $table3Cols[2]->getType());
         Assert::assertFalse($table3Cols[2]->hasLength());
         Assert::assertSame(false, $table3Cols[2]->isPrimaryKey());
         Assert::assertSame(false, $table3Cols[2]->isNullable());

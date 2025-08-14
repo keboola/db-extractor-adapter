@@ -16,7 +16,7 @@ trait SshTunnelsTrait
     private ?int $currentSshLocalPort = null;
 
     protected function openSshTunnel(
-        string $remoteHost = 'mariadb',
+        string $remoteHost = 'mysql',
         int $remotePort = 3306,
         ?int $localPort = null,
     ): int {
