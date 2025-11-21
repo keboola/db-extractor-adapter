@@ -1,4 +1,4 @@
-FROM php:8.2-cli-buster
+FROM php:8.2-cli-trixie
 
 ARG COMPOSER_FLAGS="--prefer-dist --no-interaction"
 ARG DEBIAN_FRONTEND=noninteractive
@@ -10,10 +10,6 @@ WORKDIR /code/
 COPY docker/php-prod.ini /usr/local/etc/php/php.ini
 COPY docker/composer-install.sh /tmp/composer-install.sh
 COPY docker/MariaDB_odbc_driver_template.ini /etc/MariaDB_odbc_driver_template.ini
-
-# MariaDB ODBC driver package is in backports
-RUN printf "deb http://archive.debian.org/debian buster-backports main non-free" \
-    > /etc/apt/sources.list.d/backports.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ssh \
