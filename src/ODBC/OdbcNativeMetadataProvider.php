@@ -180,6 +180,7 @@ class OdbcNativeMetadataProvider implements MetadataProvider
 
         foreach ($whitelist as $whitelistedTable) {
             $result = null;
+            $foundAny = false;
             try {
                 $result = odbc_primarykeys(
                     $this->connection->getConnection(),
@@ -193,6 +194,7 @@ class OdbcNativeMetadataProvider implements MetadataProvider
                         continue;
                     }
                     $pks[$this->getColumnId($pk)] = $pk;
+                    $foundAny = true;
                 }
                 odbc_free_result($result);
             } catch (ErrorException $e) {
@@ -201,9 +203,101 @@ class OdbcNativeMetadataProvider implements MetadataProvider
                     throw $e;
                 }
             }
+
+            if (!$foundAny && $this->isMariaDb()) {
+                $pks = array_merge($pks, $this->queryPrimaryKeysViaInformationSchema($whitelistedTable));
+            }
         }
 
         return $pks;
+    }
+
+    /**
+     * Fallback method to query primary keys via INFORMATION_SCHEMA for MariaDB
+     * @return array[string][]
+     */
+    private function queryPrimaryKeysViaInformationSchema(?InputTable $whitelistedTable): array
+    {
+        $pks = [];
+        $db = $this->onlyFromCatalog ?? $this->getCurrentDatabaseViaOdbc();
+
+        if (!$db) {
+            return $pks;
+        }
+
+        if ($whitelistedTable) {
+            $sql = "SELECT 
+                ? AS TABLE_CAT, 
+                '' AS TABLE_SCHEM, 
+                ? AS TABLE_NAME, 
+                COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'";
+            $result = odbc_prepare($this->connection->getConnection(), $sql);
+            if ($result) {
+                odbc_execute($result, [$db, $whitelistedTable->getName(), $db, $whitelistedTable->getName()]);
+                while ($pk = odbc_fetch_array($result)) {
+                    if ($this->isTableIgnored($pk)) {
+                        continue;
+                    }
+                    $pks[$this->getColumnId($pk)] = $pk;
+                }
+                odbc_free_result($result);
+            }
+        } else {
+            $sql = "SELECT 
+                TABLE_SCHEMA AS TABLE_CAT, 
+                '' AS TABLE_SCHEM, 
+                TABLE_NAME, 
+                COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                WHERE TABLE_SCHEMA = ? AND CONSTRAINT_NAME = 'PRIMARY'";
+            $result = odbc_prepare($this->connection->getConnection(), $sql);
+            if ($result) {
+                odbc_execute($result, [$db]);
+                while ($pk = odbc_fetch_array($result)) {
+                    if ($this->isTableIgnored($pk)) {
+                        continue;
+                    }
+                    $pks[$this->getColumnId($pk)] = $pk;
+                }
+                odbc_free_result($result);
+            }
+        }
+
+        return $pks;
+    }
+
+    /**
+     * Check if the connection is to a MariaDB server
+     */
+    private function isMariaDb(): bool
+    {
+        $result = odbc_exec($this->connection->getConnection(), 'SELECT VERSION() AS version');
+        if ($result) {
+            $row = odbc_fetch_array($result);
+            odbc_free_result($result);
+            if ($row && isset($row['version'])) {
+                return stripos($row['version'], 'mariadb') !== false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get the current database name via ODBC
+     */
+    private function getCurrentDatabaseViaOdbc(): ?string
+    {
+        $result = odbc_exec($this->connection->getConnection(), 'SELECT DATABASE() AS db');
+        if ($result) {
+            $row = odbc_fetch_array($result);
+            odbc_free_result($result);
+            if ($row && isset($row['db'])) {
+                return $row['db'];
+            }
+        }
+        return null;
     }
 
     /**
