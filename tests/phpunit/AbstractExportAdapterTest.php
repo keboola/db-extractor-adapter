@@ -99,7 +99,7 @@ END;
             Assert::assertThat($e->getMessage(), Assert::logicalOr(
                 new StringContains('Lost connection to MySQL server'),
                 new StringContains('MySQL server has gone away'),
-                new StringContains('Lost connection to server')
+                new StringContains('Lost connection to server'),
             ));
         }
 
