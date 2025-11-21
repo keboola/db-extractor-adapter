@@ -26,7 +26,10 @@ class OdbcConnectionTest extends BaseTest
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
             Assert::assertStringContainsString('Error connecting to DB: ', $e->getMessage());
-            Assert::assertStringContainsString('Unknown MySQL server host \'invalid\'', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Unknown MySQL server host \'invalid\''),
+                $this->stringContains('Unknown server host \'invalid\'')
+            ));
         }
 
         for ($attempt=1; $attempt < $retries; $attempt++) {
@@ -44,7 +47,10 @@ class OdbcConnectionTest extends BaseTest
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
             Assert::assertStringContainsString('Error connecting to DB: ', $e->getMessage());
-            Assert::assertStringContainsString('Unknown MySQL server host \'invalid\'', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Unknown MySQL server host \'invalid\''),
+                $this->stringContains('Unknown server host \'invalid\'')
+            ));
         }
 
         for ($attempt=1; $attempt < $retries; $attempt++) {
@@ -61,7 +67,10 @@ class OdbcConnectionTest extends BaseTest
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
             Assert::assertStringContainsString('Error connecting to DB: ', $e->getMessage());
-            Assert::assertStringContainsString('Unknown MySQL server host \'invalid\'', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Unknown MySQL server host \'invalid\''),
+                $this->stringContains('Unknown server host \'invalid\'')
+            ));
         }
 
         // No retry in logs
@@ -87,7 +96,10 @@ class OdbcConnectionTest extends BaseTest
             $connection->testConnection();
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Lost connection to MySQL server'),
+                $this->stringContains('Lost connection to server')
+            ));
         }
     }
 
@@ -116,7 +128,10 @@ class OdbcConnectionTest extends BaseTest
             $connection->testConnection();
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Lost connection to MySQL server'),
+                $this->stringContains('Lost connection to server')
+            ));
             $this->closeSshTunnels();
         }
     }
@@ -133,7 +148,10 @@ class OdbcConnectionTest extends BaseTest
             $connection->testConnection();
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Lost connection to MySQL server'),
+                $this->stringContains('Lost connection to server')
+            ));
         }
     }
 
@@ -173,7 +191,10 @@ class OdbcConnectionTest extends BaseTest
             Assert::fail('Exception expected.');
         } catch (DeadConnectionException $e) {
             Assert::assertStringContainsString('Dead connection:', $e->getMessage());
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Lost connection to MySQL server'),
+                $this->stringContains('Lost connection to server')
+            ));
         }
     }
 
@@ -198,7 +219,10 @@ class OdbcConnectionTest extends BaseTest
             $connection->query('SELECT 123 as X, 456 as Y', $retries);
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Lost connection to MySQL server'),
+                $this->stringContains('Lost connection to server')
+            ));
         }
 
         for ($attempt=1; $attempt < $retries; $attempt++) {
@@ -266,7 +290,10 @@ class OdbcConnectionTest extends BaseTest
             });
             Assert::fail('Exception expected.');
         } catch (UserExceptionInterface $e) {
-            Assert::assertStringContainsString('Lost connection to MySQL server', $e->getMessage());
+            Assert::assertThat($e->getMessage(), Assert::logicalOr(
+                $this->stringContains('Lost connection to MySQL server'),
+                $this->stringContains('Lost connection to server')
+            ));
         }
 
         for ($attempt=1; $attempt < $retries; $attempt++) {
