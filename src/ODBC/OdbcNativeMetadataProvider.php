@@ -205,13 +205,15 @@ class OdbcNativeMetadataProvider implements MetadataProvider
                     // % means ALL, see odbc_columns docs
                     $whitelistedTable ? $whitelistedTable->getName() : '%',
                 );
-                while ($pk = odbc_fetch_array($result)) {
-                    if ($this->isTableIgnored($pk)) {
-                        continue;
+                if ($result !== false) {
+                    while ($pk = odbc_fetch_array($result)) {
+                        if ($this->isTableIgnored($pk)) {
+                            continue;
+                        }
+                        $pks[$this->getColumnId($pk)] = $pk;
                     }
-                    $pks[$this->getColumnId($pk)] = $pk;
+                    odbc_free_result($result);
                 }
-                odbc_free_result($result);
             } catch (ErrorException $e) {
                 // some db vendors (like Hive) do not support primary keys
                 if (!str_contains($e->getMessage(), 'NullPointerException')) {
