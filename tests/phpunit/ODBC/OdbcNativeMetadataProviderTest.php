@@ -214,4 +214,32 @@ class OdbcNativeMetadataProviderTest extends BaseTest
         $this->metadataProvider = new OdbcNativeMetadataProvider($this->createOdbcConnection(), 'abc');
         Assert::assertCount(0, $this->metadataProvider->listTables()->getAll());
     }
+
+    public function testPrimaryKeysFallback(): void
+    {
+        // Use a subclass that forces ODBC PK query to return empty,
+        // so the INFORMATION_SCHEMA fallback is used.
+        $this->metadataProvider = new class (
+            $this->createOdbcConnection(),
+            $this->getDatabase(),
+        ) extends OdbcNativeMetadataProvider {
+            protected function queryPrimaryKeysOdbc(array $whitelist): array
+            {
+                return [];
+            }
+        };
+
+        $tables = $this->metadataProvider->listTables()->getAll();
+        $productsCols = $tables[0]->getColumns()->getAll();
+        $townsCols = $tables[2]->getColumns()->getAll();
+
+        // Primary keys should still be detected via INFORMATION_SCHEMA fallback
+        Assert::assertSame('id', $productsCols[0]->getName());
+        Assert::assertSame(true, $productsCols[0]->isPrimaryKey());
+        Assert::assertSame(false, $productsCols[1]->isPrimaryKey());
+
+        Assert::assertSame('id', $townsCols[0]->getName());
+        Assert::assertSame(true, $townsCols[0]->isPrimaryKey());
+        Assert::assertSame(false, $townsCols[1]->isPrimaryKey());
+    }
 }

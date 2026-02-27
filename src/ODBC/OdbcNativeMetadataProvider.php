@@ -170,16 +170,33 @@ class OdbcNativeMetadataProvider implements MetadataProvider
 
     /**
      * @param array|InputTable[] $whitelist
-     * @return array[string][]
+     * @return array<string, array<string, string>>
      * @throws ErrorException
      */
     protected function queryPrimaryKeys(array $whitelist): array
+    {
+        $pks = $this->queryPrimaryKeysOdbc($whitelist);
+
+        // Some ODBC drivers (eg. MariaDB 3.1.15 on Debian Trixie) don't support odbc_primarykeys,
+        // fall back to INFORMATION_SCHEMA which is SQL standard.
+        if (empty($pks)) {
+            $pks = $this->queryPrimaryKeysFallback($whitelist);
+        }
+
+        return $pks;
+    }
+
+    /**
+     * @param array|InputTable[] $whitelist
+     * @return array<string, array<string, string>>
+     * @throws ErrorException
+     */
+    protected function queryPrimaryKeysOdbc(array $whitelist): array
     {
         $whitelist = empty($whitelist) ? [null] : $whitelist;
         $pks = [];
 
         foreach ($whitelist as $whitelistedTable) {
-            $result = null;
             try {
                 $result = odbc_primarykeys(
                     $this->connection->getConnection(),
@@ -188,18 +205,81 @@ class OdbcNativeMetadataProvider implements MetadataProvider
                     // % means ALL, see odbc_columns docs
                     $whitelistedTable ? $whitelistedTable->getName() : '%',
                 );
-                while ($pk = odbc_fetch_array($result)) {
-                    if ($this->isTableIgnored($pk)) {
-                        continue;
+                if ($result !== false) {
+                    while ($pk = odbc_fetch_array($result)) {
+                        if ($this->isTableIgnored($pk)) {
+                            continue;
+                        }
+                        $pks[$this->getColumnId($pk)] = $pk;
                     }
-                    $pks[$this->getColumnId($pk)] = $pk;
+                    odbc_free_result($result);
                 }
-                odbc_free_result($result);
             } catch (ErrorException $e) {
                 // some db vendors (like Hive) do not support primary keys
                 if (!str_contains($e->getMessage(), 'NullPointerException')) {
                     throw $e;
                 }
+            }
+        }
+
+        return $pks;
+    }
+
+    /**
+     * Fallback for primary key detection using INFORMATION_SCHEMA (SQL standard).
+     * Used when odbc_primarykeys() returns empty results (eg. MariaDB ODBC 3.1.15).
+     * @param array|InputTable[] $whitelist
+     * @return array<string, array<string, string>>
+     */
+    protected function queryPrimaryKeysFallback(array $whitelist): array
+    {
+        $whitelist = empty($whitelist) ? [null] : $whitelist;
+        $pks = [];
+
+        foreach ($whitelist as $whitelistedTable) {
+            $tableName = $whitelistedTable ? $whitelistedTable->getName() : '%';
+
+            $conditions = ["tc.CONSTRAINT_TYPE = 'PRIMARY KEY'"];
+            if ($this->onlyFromCatalog !== null) {
+                $conditions[] = sprintf(
+                    'kcu.TABLE_SCHEMA = %s',
+                    $this->connection->quote($this->onlyFromCatalog),
+                );
+            }
+            if ($tableName !== '%') {
+                $conditions[] = sprintf(
+                    'kcu.TABLE_NAME = %s',
+                    $this->connection->quote($tableName),
+                );
+            }
+
+            $query = sprintf(
+                'SELECT kcu.TABLE_SCHEMA AS TABLE_CAT, ' .
+                "'' AS TABLE_SCHEM, " .
+                'kcu.TABLE_NAME, ' .
+                'kcu.COLUMN_NAME ' .
+                'FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ' .
+                'JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc ' .
+                'ON kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME ' .
+                'AND kcu.TABLE_SCHEMA = tc.TABLE_SCHEMA ' .
+                'AND kcu.TABLE_NAME = tc.TABLE_NAME ' .
+                'WHERE %s',
+                implode(' AND ', $conditions),
+            );
+
+            try {
+                $result = odbc_exec($this->connection->getConnection(), $query);
+                if ($result !== false) {
+                    while ($pk = odbc_fetch_array($result)) {
+                        if ($this->isTableIgnored($pk)) {
+                            continue;
+                        }
+                        $pks[$this->getColumnId($pk)] = $pk;
+                    }
+                    odbc_free_result($result);
+                }
+            } catch (ErrorException $e) {
+                // INFORMATION_SCHEMA may not be available on all databases
             }
         }
 
