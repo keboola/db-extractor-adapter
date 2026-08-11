@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Keboola\DbExtractor\Adapter\Tests;
 
+use DateTimeImmutable;
 use Keboola\DbExtractor\Adapter\Query\DefaultQueryFactory;
 use Keboola\DbExtractor\Adapter\Tests\Traits\PdoCreateConnectionTrait;
+use Keboola\DbExtractorConfig\Incremental\WindowBoundResolver;
 use PHPUnit\Framework\Assert;
 
 class DefaultQueryFactoryTest extends BaseTest
@@ -98,5 +100,64 @@ class DefaultQueryFactoryTest extends BaseTest
                 ],
             ],
         ];
+    }
+
+    public function testQueryFactoryWindowRelative(): void
+    {
+        $now = new DateTimeImmutable('2026-08-11 12:00:00');
+        // watermark present but MUST be ignored on the window path
+        $factory = new DefaultQueryFactory(
+            ['lastFetchedRow' => '2026-08-11 11:00:00'],
+            new WindowBoundResolver(),
+            $now,
+        );
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingStart' => '20 minutes ago',
+            'incrementalFetchingEnd' => 'now',
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame(
+            'SELECT * FROM `bar`.`foo` WHERE `ts` >= \'2026-08-11 11:40:00\' ' .
+            'AND `ts` <= \'2026-08-11 12:00:00\' ORDER BY `ts`',
+            $query,
+        );
+    }
+
+    public function testQueryFactoryWindowStartOnlyAbsolute(): void
+    {
+        $now = new DateTimeImmutable('2026-08-11 12:00:00');
+        $factory = new DefaultQueryFactory([], new WindowBoundResolver(), $now);
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingStart' => '2020-01-01',
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame(
+            'SELECT * FROM `bar`.`foo` WHERE `ts` >= \'2020-01-01 00:00:00\' ORDER BY `ts`',
+            $query,
+        );
+    }
+
+    public function testQueryFactoryWindowNumericAbsolute(): void
+    {
+        $now = new DateTimeImmutable('2026-08-11 12:00:00');
+        $factory = new DefaultQueryFactory([], new WindowBoundResolver(), $now);
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'id',
+            'incrementalFetchingStart' => '1000',
+            'incrementalFetchingEnd' => '2000',
+        ])->withIncrementalColumnType('INTEGER');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame(
+            'SELECT * FROM `bar`.`foo` WHERE `id` >= \'1000\' AND `id` <= \'2000\' ORDER BY `id`',
+            $query,
+        );
     }
 }
