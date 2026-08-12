@@ -114,6 +114,7 @@ class DefaultQueryFactoryTest extends BaseTest
         $exportConfig = $this->createExportConfig([
             'table' => ['tableName' => 'foo', 'schema' => 'bar'],
             'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingMode' => 'window',
             'incrementalFetchingStart' => '20 minutes ago',
             'incrementalFetchingEnd' => 'now',
         ])->withIncrementalColumnType('TIMESTAMP');
@@ -133,6 +134,7 @@ class DefaultQueryFactoryTest extends BaseTest
         $exportConfig = $this->createExportConfig([
             'table' => ['tableName' => 'foo', 'schema' => 'bar'],
             'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingMode' => 'window',
             'incrementalFetchingStart' => '2020-01-01',
         ])->withIncrementalColumnType('TIMESTAMP');
 
@@ -150,6 +152,7 @@ class DefaultQueryFactoryTest extends BaseTest
         $exportConfig = $this->createExportConfig([
             'table' => ['tableName' => 'foo', 'schema' => 'bar'],
             'incrementalFetchingColumn' => 'id',
+            'incrementalFetchingMode' => 'window',
             'incrementalFetchingStart' => '1000',
             'incrementalFetchingEnd' => '2000',
         ])->withIncrementalColumnType('INTEGER');
@@ -159,5 +162,61 @@ class DefaultQueryFactoryTest extends BaseTest
             'SELECT * FROM `bar`.`foo` WHERE `id` >= \'1000\' AND `id` <= \'2000\' ORDER BY `id`',
             $query,
         );
+    }
+
+    public function testQueryFactoryWatermarkLookbackTimestamp(): void
+    {
+        // Watermark mode (default) with a lookback: the WHERE lower bound is the stored watermark
+        // shifted back by the lookback duration; "now" is irrelevant on this path.
+        $factory = new DefaultQueryFactory(
+            ['lastFetchedRow' => '2026-08-11 12:00:00'],
+            new WindowBoundResolver(),
+            new DateTimeImmutable('2030-01-01 00:00:00'),
+        );
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingLookback' => '20 minutes',
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame(
+            'SELECT * FROM `bar`.`foo` WHERE `ts` >= \'2026-08-11 11:40:00\' ORDER BY `ts`',
+            $query,
+        );
+    }
+
+    public function testQueryFactoryWatermarkLookbackNumeric(): void
+    {
+        $factory = new DefaultQueryFactory(
+            ['lastFetchedRow' => '10000'],
+            new WindowBoundResolver(),
+            new DateTimeImmutable('2026-08-11 12:00:00'),
+        );
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'id',
+            'incrementalFetchingLookback' => '10',
+        ])->withIncrementalColumnType('INTEGER');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame(
+            'SELECT * FROM `bar`.`foo` WHERE `id` >= \'9990\' ORDER BY `id`',
+            $query,
+        );
+    }
+
+    public function testQueryFactoryWatermarkLookbackNoStateIsFullFetch(): void
+    {
+        // First run (no watermark yet): a lookback cannot lower anything, so no WHERE is emitted.
+        $factory = new DefaultQueryFactory([], new WindowBoundResolver(), new DateTimeImmutable('2026-08-11 12:00:00'));
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingLookback' => '20 minutes',
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame('SELECT * FROM `bar`.`foo` ORDER BY `ts`', $query);
     }
 }

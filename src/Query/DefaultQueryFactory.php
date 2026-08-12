@@ -65,17 +65,38 @@ class DefaultQueryFactory implements QueryFactory
         }
         $col = $connection->quoteIdentifier($exportConfig->getIncrementalFetchingColumn());
 
-        // No window => unchanged watermark behaviour.
-        if (!$exportConfig->hasIncrementalFetchingWindow()) {
-            $watermark = $this->state['lastFetchedRow'] ?? null;
-            if ($watermark !== null) {
-                // intentionally ">=" last row should be included, it is handled by storage deduplication process
-                yield sprintf('WHERE %s >= %s', $col, $connection->quote($watermark));
-            }
+        // Window mode => strict [start, end], watermark IGNORED (range re-scanned every run, deduped by PK).
+        if ($exportConfig->isIncrementalFetchingWindowMode()) {
+            yield from $this->createWindowWhere($exportConfig, $connection, $col);
             return;
         }
 
-        // Window set => strict [start, end], watermark IGNORED (range re-scanned every run, deduped by PK).
+        // Watermark mode (default): resume from the stored watermark, optionally lowered by a lookback
+        // margin so a late-committing row (assigned below the watermark, visible only afterwards) is
+        // re-scanned. On the very first run there is no watermark yet => full fetch, exactly as before.
+        $watermark = $this->state['lastFetchedRow'] ?? null;
+        if ($watermark === null) {
+            return;
+        }
+        $lowerBound = (string) $watermark;
+        if ($exportConfig->hasIncrementalFetchingLookback()) {
+            $lowerBound = $this->resolver->resolveLookbackLowerBound(
+                $lowerBound,
+                (string) $exportConfig->getIncrementalFetchingLookback(),
+                $exportConfig->getIncrementalColumnType(),
+            );
+        }
+        // intentionally ">=" last row should be included, it is handled by storage deduplication process
+        yield sprintf('WHERE %s >= %s', $col, $connection->quote($lowerBound));
+    }
+
+    protected function createWindowWhere(ExportConfig $exportConfig, DbConnection $connection, string $col): Generator
+    {
+        // No bounds configured in window mode => no predicate (watermark is intentionally ignored here).
+        if (!$exportConfig->hasIncrementalFetchingWindow()) {
+            return;
+        }
+
         $type = $exportConfig->getIncrementalColumnType();
         $lower = $this->resolver->resolveLowerBound(
             $exportConfig->getIncrementalFetchingWindowStart(),
