@@ -240,4 +240,24 @@ class DefaultQueryFactoryTest extends BaseTest
         $this->expectExceptionMessage('Incremental fetching "window" mode is enabled but neither');
         $factory->create($exportConfig, $this->createPdoConnection());
     }
+
+    public function testQueryFactoryWatermarkLookbackWithLimitFails(): void
+    {
+        // Lookback + limit would persist an older row as the watermark and move it backwards; reject it.
+        $factory = new DefaultQueryFactory(
+            ['lastFetchedRow' => '2026-08-11 12:00:00'],
+            new WindowBoundResolver(),
+            new DateTimeImmutable('2026-08-11 12:00:00'),
+        );
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingLookback' => '20 minutes',
+            'incrementalFetchingLimit' => 100,
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('lookback cannot be combined with "incrementalFetchingLimit"');
+        $factory->create($exportConfig, $this->createPdoConnection());
+    }
 }
