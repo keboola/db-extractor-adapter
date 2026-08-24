@@ -25,6 +25,35 @@ This library contains a common interface for connecting to and data extracting f
     - Class [`DefaultQueryFactory`](https://github.com/keboola/db-extractor-adapter/blob/master/src/Query/DefaultQueryFactory.php) is base implementation for MySQL/MariaDb compatible SQL dialects. 
 - **Class [`QueryResultCsvWriter`](https://github.com/keboola/db-extractor-adapter/blob/master/src/QueryResultCsvWriter.php)** used to write rows from the `QueryResult` to the specified CSV file. 
 
+## Incremental Fetching
+
+When `incrementalFetchingColumn` is set, [`DefaultQueryFactory`](https://github.com/keboola/db-extractor-adapter/blob/master/src/Query/DefaultQueryFactory.php)
+builds the `WHERE` clause from the incremental-fetching config on `ExportConfig`. The dialect-specific
+factories in the individual extractors either inherit this logic or mirror it. The lower/upper bounds
+are resolved by [`WindowBoundResolver`](https://github.com/keboola/db-extractor-config/blob/master/src/Incremental/WindowBoundResolver.php)
+(from `db-extractor-config`) and quoted for the target column type (`INTEGER`, `NUMERIC`, `FLOAT` or
+`TIMESTAMP`).
+
+`incrementalFetchingMode` selects the strategy. It is **optional and defaults to `watermark`**, so
+configs without it produce exactly the same query as before this feature was added.
+
+- **`watermark`** (default) — `WHERE column >= <last fetched value>` (the value stored in state). On the
+  first run there is no watermark yet, so no `WHERE` is emitted (full fetch).
+  - `incrementalFetchingLookback` *(optional)* lowers that bound by a fixed margin —
+    `column >= (watermark − N)` — so a row committed slightly after its own timestamp is re-scanned on a
+    later run. It is a **duration** for `TIMESTAMP` (e.g. `"20 minutes"`) or a **number** for numeric
+    columns. Being watermark-anchored, it has no dependency on the current time.
+
+- **`window`** — `column >= start [AND column <= end]`, **ignoring** the watermark, for a bounded or
+  segmented backfill. `incrementalFetchingStart` / `incrementalFetchingEnd` accept a relative
+  (`"20 minutes ago"`, `"now"`) or absolute (`"2021-01-01"`, `"1000"`) value. **At least one bound is
+  required** — window mode with neither `incrementalFetchingStart` nor `incrementalFetchingEnd` throws a
+  `UserException` rather than silently degrading to an unfiltered full-table scan.
+
+The modes are mutually exclusive; keys belonging to the other mode are ignored. Cross-cutting validation
+(e.g. requiring a primary key when a lookback/window re-fetches rows) lives in
+[`db-extractor-common`](https://github.com/keboola/db-extractor-common).
+
 ## Development
 
 Clone this repository and init the workspace with following command:

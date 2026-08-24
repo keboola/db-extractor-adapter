@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\DbExtractor\Adapter\Tests;
 
 use DateTimeImmutable;
+use Keboola\DbExtractor\Adapter\Exception\UserException;
 use Keboola\DbExtractor\Adapter\Query\DefaultQueryFactory;
 use Keboola\DbExtractor\Adapter\Tests\Traits\PdoCreateConnectionTrait;
 use Keboola\DbExtractorConfig\Incremental\WindowBoundResolver;
@@ -218,5 +219,25 @@ class DefaultQueryFactoryTest extends BaseTest
 
         $query = $factory->create($exportConfig, $this->createPdoConnection());
         Assert::assertSame('SELECT * FROM `bar`.`foo` ORDER BY `ts`', $query);
+    }
+
+    public function testQueryFactoryWindowModeWithoutBoundsFails(): void
+    {
+        // Window mode ignores the watermark; with no start/end it would degrade to a full-table scan.
+        // That is never intended, so the factory must fail loudly instead of emitting an unfiltered query.
+        $factory = new DefaultQueryFactory(
+            ['lastFetchedRow' => '2026-08-11 11:00:00'],
+            new WindowBoundResolver(),
+            new DateTimeImmutable('2026-08-11 12:00:00'),
+        );
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingMode' => 'window',
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Incremental fetching "window" mode is enabled but neither');
+        $factory->create($exportConfig, $this->createPdoConnection());
     }
 }

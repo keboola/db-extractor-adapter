@@ -7,6 +7,7 @@ namespace Keboola\DbExtractor\Adapter\Query;
 use DateTimeImmutable;
 use Generator;
 use Keboola\DbExtractor\Adapter\Connection\DbConnection;
+use Keboola\DbExtractor\Adapter\Exception\UserException;
 use Keboola\DbExtractorConfig\Configuration\ValueObject\ExportConfig;
 use Keboola\DbExtractorConfig\Incremental\WindowBoundResolver;
 
@@ -92,9 +93,15 @@ class DefaultQueryFactory implements QueryFactory
 
     protected function createWindowWhere(ExportConfig $exportConfig, DbConnection $connection, string $col): Generator
     {
-        // No bounds configured in window mode => no predicate (watermark is intentionally ignored here).
+        // Window mode ignores the watermark on purpose. With no bounds there would be no predicate at
+        // all, silently turning a bounded window into a full-table scan every run. That is never what a
+        // window config intends, so fail loudly instead of emitting an unfiltered query.
         if (!$exportConfig->hasIncrementalFetchingWindow()) {
-            return;
+            throw new UserException(
+                'Incremental fetching "window" mode is enabled but neither "incrementalFetchingStart" ' .
+                'nor "incrementalFetchingEnd" is set. Configure at least one bound, or switch to ' .
+                '"watermark" mode.',
+            );
         }
 
         $type = $exportConfig->getIncrementalColumnType();

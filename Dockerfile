@@ -4,6 +4,11 @@ ARG COMPOSER_FLAGS="--prefer-dist --no-interaction"
 ARG DEBIAN_FRONTEND=noninteractive
 ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV COMPOSER_PROCESS_TIMEOUT 3600
+# The only advisory-affected package here is guzzle 6, pulled solely by the DEV/test dependency
+# ihsw/toxiproxy-php-client ^2.0 (its v3 needs PHP 8.3; we are on 8.2). It never ships in the runtime.
+# Composer 2.9+ excludes advisory-affected versions from the resolution pool by default, which makes the
+# lockless `composer install` below unresolvable; opt out so the test toolchain can install.
+ENV COMPOSER_NO_SECURITY_BLOCKING 1
 
 WORKDIR /code/
 
