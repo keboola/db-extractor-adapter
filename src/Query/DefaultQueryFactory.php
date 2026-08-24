@@ -17,13 +17,14 @@ class DefaultQueryFactory implements QueryFactory
 
     private WindowBoundResolver $resolver;
 
-    private DateTimeImmutable $now;
+    /** Fixed-clock override for tests; null means "resolve at query-creation time" (see createWindowWhere). */
+    private ?DateTimeImmutable $now;
 
     public function __construct(array $state, ?WindowBoundResolver $resolver = null, ?DateTimeImmutable $now = null)
     {
         $this->state = $state;
         $this->resolver = $resolver ?? new WindowBoundResolver();
-        $this->now = $now ?? new DateTimeImmutable('now');
+        $this->now = $now;
     }
 
     public function create(ExportConfig $exportConfig, DbConnection $connection): string
@@ -117,16 +118,20 @@ class DefaultQueryFactory implements QueryFactory
             );
         }
 
+        // Resolve "now" per query, not once at construction, so a reused factory doesn't emit a stale
+        // window for relative bounds ("20 minutes ago", "now"). Tests inject a fixed clock via $this->now.
+        $now = $this->now ?? new DateTimeImmutable('now');
+
         $type = $exportConfig->getIncrementalColumnType();
         $lower = $this->resolver->resolveLowerBound(
             $exportConfig->getIncrementalFetchingWindowStart(),
             $type,
-            $this->now,
+            $now,
         );
         $upper = $this->resolver->resolveUpperBound(
             $exportConfig->getIncrementalFetchingWindowEnd(),
             $type,
-            $this->now,
+            $now,
         );
 
         $conditions = [];

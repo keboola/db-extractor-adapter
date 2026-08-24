@@ -261,6 +261,30 @@ class DefaultQueryFactoryTest extends BaseTest
         $factory->create($exportConfig, $this->createPdoConnection());
     }
 
+    public function testQueryFactoryWatermarkWithStaleWindowKeyAndLimitIsAllowed(): void
+    {
+        // In watermark mode the window keys are mode-gated (ignored), so hasIncrementalFetchingBounds()
+        // is false and the bounds+limit guard does not fire: a stale incrementalFetchingStart left over
+        // from a previous window edit must NOT block a valid plain watermark+limit (chunked) query.
+        $factory = new DefaultQueryFactory(
+            ['lastFetchedRow' => '123'],
+            new WindowBoundResolver(),
+            new DateTimeImmutable('2026-08-11 12:00:00'),
+        );
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'col2',
+            'incrementalFetchingStart' => '2020-01-01', // stale window key, ignored in watermark mode
+            'incrementalFetchingLimit' => 321,
+        ])->withIncrementalColumnType('INTEGER');
+
+        $query = $factory->create($exportConfig, $this->createPdoConnection());
+        Assert::assertSame(
+            'SELECT * FROM `bar`.`foo` WHERE `col2` >= \'123\' ORDER BY `col2` LIMIT 321',
+            $query,
+        );
+    }
+
     public function testQueryFactoryWindowWithLimitFails(): void
     {
         // Window + limit returns only the first N rows of the fixed range forever; reject it.

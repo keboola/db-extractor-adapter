@@ -50,8 +50,11 @@ configs without it produce exactly the same query as before this feature was add
   required** — window mode with neither `incrementalFetchingStart` nor `incrementalFetchingEnd` throws a
   `UserException` rather than silently degrading to an unfiltered full-table scan.
 
-The modes are mutually exclusive; keys belonging to the other mode are ignored. Cross-cutting validation
-(e.g. requiring a primary key when a lookback/window re-fetches rows) lives in
+The modes are mutually exclusive; keys belonging to the other mode are ignored. `incrementalFetchingLimit`
+**cannot** be combined with a window or a lookback — a window would keep returning the first page of a
+fixed range and never advance, and a lookback would move the watermark backwards; both throw a
+`UserException`. It remains valid with plain watermark mode (chunked forward fetching). Cross-cutting
+validation (e.g. requiring a primary key when a lookback/window re-fetches rows) lives in
 [`db-extractor-common`](https://github.com/keboola/db-extractor-common).
 
 ## Development
