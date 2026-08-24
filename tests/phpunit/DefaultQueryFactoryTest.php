@@ -257,7 +257,24 @@ class DefaultQueryFactoryTest extends BaseTest
         ])->withIncrementalColumnType('TIMESTAMP');
 
         $this->expectException(UserException::class);
-        $this->expectExceptionMessage('lookback cannot be combined with "incrementalFetchingLimit"');
+        $this->expectExceptionMessage('"incrementalFetchingLimit" cannot be combined with a window or a lookback');
+        $factory->create($exportConfig, $this->createPdoConnection());
+    }
+
+    public function testQueryFactoryWindowWithLimitFails(): void
+    {
+        // Window + limit returns only the first N rows of the fixed range forever; reject it.
+        $factory = new DefaultQueryFactory([], new WindowBoundResolver(), new DateTimeImmutable('2026-08-11 12:00:00'));
+        $exportConfig = $this->createExportConfig([
+            'table' => ['tableName' => 'foo', 'schema' => 'bar'],
+            'incrementalFetchingColumn' => 'ts',
+            'incrementalFetchingMode' => 'window',
+            'incrementalFetchingStart' => '2020-01-01',
+            'incrementalFetchingLimit' => 100,
+        ])->withIncrementalColumnType('TIMESTAMP');
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('"incrementalFetchingLimit" cannot be combined with a window or a lookback');
         $factory->create($exportConfig, $this->createPdoConnection());
     }
 }

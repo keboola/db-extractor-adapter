@@ -66,6 +66,19 @@ class DefaultQueryFactory implements QueryFactory
         }
         $col = $connection->quoteIdentifier($exportConfig->getIncrementalFetchingColumn());
 
+        // A fetch limit caps the ascending result to its first N rows. That is fine for plain watermark
+        // chunking (each run advances past the previous max), but breaks with a window or a lookback: a
+        // window keeps returning the first page of a fixed range and never advances; a lookback persists
+        // an older row as the watermark and moves it backwards. Reject the combination for both.
+        if ($exportConfig->hasIncrementalFetchingBounds() && $exportConfig->hasIncrementalFetchingLimit()) {
+            throw new UserException(
+                'Incremental fetching "incrementalFetchingLimit" cannot be combined with a window or a ' .
+                'lookback: the limited result never advances through the bounded range (window) or moves ' .
+                'the watermark backwards (lookback), so newer rows are never reached. Remove the limit, ' .
+                'or use plain watermark mode.',
+            );
+        }
+
         // Window mode => strict [start, end], watermark IGNORED (range re-scanned every run, deduped by PK).
         if ($exportConfig->isIncrementalFetchingWindowMode()) {
             yield from $this->createWindowWhere($exportConfig, $connection, $col);
@@ -75,20 +88,6 @@ class DefaultQueryFactory implements QueryFactory
         // Watermark mode (default): resume from the stored watermark, optionally lowered by a lookback
         // margin so a late-committing row (assigned below the watermark, visible only afterwards) is
         // re-scanned. On the very first run there is no watermark yet => full fetch, exactly as before.
-
-        // A lookback lowers the range below the watermark; a fetch limit caps the ascending result. If the
-        // lookback overlap holds at least "limit" rows, every run returns only those older rows and the
-        // persisted lastFetchedRow moves the watermark backwards, so newer rows are never reached. The two
-        // are fundamentally incompatible - reject the combination instead of silently stalling.
-        if ($exportConfig->hasIncrementalFetchingLookback() && $exportConfig->hasIncrementalFetchingLimit()) {
-            throw new UserException(
-                'Incremental fetching lookback cannot be combined with "incrementalFetchingLimit": the ' .
-                'limited, ascending result would persist an older row as the watermark and move it ' .
-                'backwards, so newer rows would never be reached. Remove the limit, or use "window" mode ' .
-                'for a bounded backfill.',
-            );
-        }
-
         $watermark = $this->state['lastFetchedRow'] ?? null;
         if ($watermark === null) {
             return;
