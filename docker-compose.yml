@@ -2,7 +2,7 @@ services:
   app: &base
     build: .
     command: composer ci
-    environment:
+    environment: &base_env
       DB_USER: root
       DB_PASSWORD: somePassword
       DB_HOST: mariadb
@@ -17,6 +17,12 @@ services:
 
   dev:
     <<: *base
+    # dev bind-mounts the source and composer.lock is gitignored, so `composer install` here resolves
+    # from scratch and hits Composer 2.9+ security blocking on guzzle 6 (a dev-only toxiproxy transitive;
+    # see Dockerfile). The opt-out is scoped to this dev service only - the app/CI runtime keeps blocking.
+    environment:
+      <<: *base_env
+      COMPOSER_NO_SECURITY_BLOCKING: "1"
     volumes:
       - .:/code
       - ssh-keys:/root/.ssh:ro
